@@ -84,7 +84,7 @@ def setup_paths(args):
 def get_config(args):
     ds_cfg = get_dataset_config(args.dataset)
     embed_dim = BACKBONE_DIMS.get(args.backbone, 384)
-    freeze_epochs = args.freeze_epochs or int(args.epochs * 0.05)
+    freeze_epochs = args.freeze_epochs if args.freeze_epochs is not None else int(args.epochs * 0.05)
     warmup_epochs = args.warmup_epochs or int(args.epochs * 0.1)
     return ds_cfg, embed_dim, freeze_epochs, warmup_epochs
 
