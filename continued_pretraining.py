@@ -35,6 +35,9 @@ BACKBONE_DIMS = {
     "google/vit-base-patch16-224": 768,
     "google/vit-large-patch16-224": 1024,
     # Timm ViT models
+    "vit_base_patch16_224": 768,
+    "vit_large_patch16_224": 1024,
+    "vit_huge_patch14_224": 1280,
     "vit_base_patch16": 768,
     "vit_large_patch16": 1024,
     "vit_huge_patch14": 1280,
