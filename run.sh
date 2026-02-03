@@ -47,7 +47,7 @@ echo "Log directory: ${LOG_DIR}"
 echo "=========================================="
 python -u mae/mae_cp.py \
     --dataset cifar10 \
-    --backbone facebook/vit-mae-base \
+    --backbone vit_base_patch16_224.mae \
     --n-samples 1000 \
     --epochs 100 \
     --batch-size 64 \

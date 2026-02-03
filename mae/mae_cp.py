@@ -14,7 +14,13 @@ from mae.mae_cp_forward import mae_cp_forward
 
 
 def setup_mae_cp(backbone, embed_dim, optim_config, **kwargs):
-    """Setup MAE Continued Pretraining with proper masking.
+    """Setup MAE Continued Pretraining with MaskedEncoder (timm models only).
+    
+    Pure MAE approach:
+    1. PatchMasking generates random mask
+    2. MaskedEncoder applies masking BEFORE encoding
+    3. Encoder only processes visible patches (~25%)
+    4. Decoder reconstructs all patches from visible tokens
     """
     image_size = kwargs["image_size"]
     num_tokens = kwargs["num_tokens"]
@@ -24,10 +30,12 @@ def setup_mae_cp(backbone, embed_dim, optim_config, **kwargs):
 
     patch_size = image_size // int(num_tokens ** 0.5)
     output_dim = patch_size ** 2 * 3
-
-    masking = PatchMasking(mask_ratio=mask_ratio, block_size=1)  # Random masking
-    encoder = MaskedEncoder(model_or_model_name=backbone, masking=masking)
     
+    # Encoder: MaskedEncoder with random masking
+    masking = PatchMasking(mask_ratio=mask_ratio, block_size=1)
+    masked_backbone = MaskedEncoder(model_or_model_name=backbone, masking=masking)
+    
+    # Decoder: input is encoder output (embed_dim), internal uses decoder_dim
     decoder = MAEDecoder(
         embed_dim=embed_dim,
         decoder_embed_dim=decoder_dim,
@@ -37,12 +45,12 @@ def setup_mae_cp(backbone, embed_dim, optim_config, **kwargs):
     )
     
     return spt.Module(
-        backbone=encoder,
+        backbone=masked_backbone,
         forward=mae_cp_forward,
         optim=optim_config,
         decoder=decoder,
         mask_ratio=mask_ratio,
-        patch_size=patch_size
+        patch_size=patch_size,
     )
 
 
@@ -69,8 +77,20 @@ def main():
     with torch.no_grad():
         test_input = torch.zeros(1, 3, image_size, image_size, device=next(backbone.parameters()).device)
         out = backbone(test_input)
-        tokens = out.last_hidden_state if hasattr(out, "last_hidden_state") else out
+        
+        # Handle different output formats
+        if hasattr(out, "last_hidden_state"):
+            # HuggingFace models
+            tokens = out.last_hidden_state
+        elif isinstance(out, torch.Tensor):
+            # timm models return tensor directly
+            tokens = out
+        else:
+            raise ValueError(f"Unexpected backbone output type: {type(out)}")
+        
+        # Extract number of patch tokens (excluding CLS token)
         num_tokens = tokens.shape[1] - 1
+    
     patch_size = image_size // int(num_tokens ** 0.5)
     print(f"Backbone: {num_tokens} tokens, patch_size={patch_size}")
 
@@ -81,10 +101,14 @@ def main():
     baseline_results = run_baseline(backbone, eval_train_loader, test_loader, device, args, logger)
     optim_config = create_optim_config(args, warmup_epochs)
 
-    module = setup_mae_cp(backbone, embed_dim, optim_config,
-                          image_size=image_size, num_tokens=num_tokens,
-                          decoder_dim=args.decoder_dim, decoder_depth=args.decoder_depth,
-                          mask_ratio=args.mask_ratio)
+    module = setup_mae_cp(
+        backbone, embed_dim, optim_config,
+        image_size=image_size,
+        num_tokens=num_tokens,
+        decoder_dim=args.decoder_dim,
+        decoder_depth=args.decoder_depth,
+        mask_ratio=args.mask_ratio
+    )
 
     ckpt_path = str(checkpoint_dir / f"mae_cp_{args.dataset}_{args.backbone.replace('/', '_')}.ckpt")
     run_training(module, data, args, ds_cfg, embed_dim, freeze_epochs, logger, ckpt_path)

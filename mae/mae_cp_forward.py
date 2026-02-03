@@ -1,4 +1,3 @@
-# MAE CP forward - reconstruct pixels from pretrained backbone latents
 import torch
 import stable_pretraining as spt
 
@@ -21,35 +20,37 @@ def patchify(imgs, patch_size):
     x = x.reshape(B, h * w, patch_size ** 2 * C)
     return x
 
+
 def mae_cp_forward(self, batch, stage):
-    """MAE Continued Pretraining forward pass.
+    """MAE Continued Pretraining forward pass (Pure MAE with MaskedEncoder).
     
-    Correct MAE Pipeline:
-    1. MaskedEncoder: Apply random masking → Encode ONLY visible patches
-    2. Decoder: Reconstruct all patches from visible patch representations
-    3. Loss: Compute reconstruction error only on masked patches
+    Flow:
+    1. MaskedEncoder applies random masking BEFORE encoding
+    2. Encoder only processes visible patches (~25% of total)
+    3. Decoder reconstructs all patches from visible token representations
+    4. Loss computed only on masked patches
     
-    Key: Masking happens BEFORE encoding (not after), which is the correct MAE approach.
-    The encoder only sees and processes visible patches, making it learn better representations.
+    This is the correct MAE implementation as described in the paper.
     """
-    # 1. Masked Encoder forward
+    # 1. MaskedEncoder forward
     encoder_out = self.backbone(batch["image"])
     
-    encoded_tokens = encoder_out.encoded[:, 1:]
-    mask = encoder_out.mask
+    # Extract visible tokens (remove CLS token)
+    tokens = encoder_out.encoded[:, 1:]  # [B, N_visible, D]
+    mask = encoder_out.mask  # [B, N_patches]
     
-    # 2. Decoder forward
-    pred = self.decoder(encoded_tokens, mask, output_masked_only=False)  # [B, N_patches, output_dim]
+    # 2. Decoder reconstructs all patches from visible tokens
+    pred = self.decoder(tokens, mask, output_masked_only=False)  # [B, N_patches, output_dim]
     
     # 3. Store embedding for evaluation callbacks (KNN, linear probe)
-    batch["embedding"] = encoded_tokens.mean(dim=1)
+    batch["embedding"] = tokens.mean(dim=1)
     
-    # 4. Compute reconstruction loss on masked patches
+    # 4. Compute reconstruction loss on masked patches only
     if self.training:
         # Patchify: convert image to patches
         target = patchify(batch["image"], self.patch_size)  # [B, N_patches, patch_size^2 * 3]
         
-        # Loss: compute MSE only on mask=1 positions
+        # Loss: MSE only on mask=1 positions
         batch["loss"] = spt.losses.mae(
             target=target,
             pred=pred,

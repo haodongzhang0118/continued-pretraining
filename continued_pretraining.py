@@ -11,7 +11,7 @@ from lightning.pytorch.callbacks import LearningRateMonitor
 
 import stable_pretraining as spt
 from stable_pretraining.data import transforms
-from stable_pretraining.backbone.utils import from_huggingface
+from stable_pretraining.backbone.utils import from_huggingface, from_timm
 from stable_pretraining.data.transforms import MultiViewTransform
 
 try:
@@ -38,10 +38,14 @@ BACKBONE_DIMS = {
     "vit_base_patch16": 768,
     "vit_large_patch16": 1024,
     "vit_huge_patch14": 1280,
-    # MAE models (Masked Autoencoders)
+    # MAE models - HuggingFace 
     "facebook/vit-mae-base": 768,
     "facebook/vit-mae-large": 1024,
     "facebook/vit-mae-huge": 1280,
+    # MAE models - timm 
+    "vit_base_patch16_224.mae": 768,
+    "vit_large_patch16_224.mae": 1024,
+    "vit_huge_patch14_224.mae": 1280,
 }
 
 
@@ -223,7 +227,29 @@ def create_data_loaders(args, ds_cfg, train_transform, val_transform, data_dir):
 
 
 def load_backbone(args):
-    backbone = from_huggingface(args.backbone, pretrained=True)
+    """Load backbone from either timm or HuggingFace.
+    
+    Automatically detects model type:
+    - timm models: Contains '.', numbers, or known timm prefixes
+    - HuggingFace models: Contains '/'
+    """
+    backbone_name = args.backbone
+    
+    # Detect model type
+    is_timm_model = (
+        '/' not in backbone_name or  # timm models don't have '/'
+        backbone_name.startswith('vit_') or
+        backbone_name.startswith('deit_') or
+        '.mae' in backbone_name
+    )
+    
+    if is_timm_model:
+        print(f"Loading timm model: {backbone_name}")
+        backbone = from_timm(backbone_name, pretrained=True, num_classes=0)
+    else:
+        print(f"Loading HuggingFace model: {backbone_name}")
+        backbone = from_huggingface(backbone_name, pretrained=True)
+    
     for p in backbone.parameters():
         p.requires_grad = True
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
