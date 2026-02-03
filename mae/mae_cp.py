@@ -3,7 +3,8 @@
 import torch
 import stable_pretraining as spt
 from lightning.pytorch.loggers import WandbLogger
-from stable_pretraining.backbone.vit import MAEDecoder
+from stable_pretraining.backbone.vit import MAEDecoder, MaskedEncoder
+from stable_pretraining.backbone.patch_masking import PatchMasking
 
 from continued_pretraining import (
     BACKBONE_DIMS, create_base_parser, setup_paths, get_config, create_transforms,
@@ -13,6 +14,8 @@ from mae.mae_cp_forward import mae_cp_forward
 
 
 def setup_mae_cp(backbone, embed_dim, optim_config, **kwargs):
+    """Setup MAE Continued Pretraining with proper masking.
+    """
     image_size = kwargs["image_size"]
     num_tokens = kwargs["num_tokens"]
     decoder_dim = kwargs.get("decoder_dim", 512)
@@ -22,17 +25,25 @@ def setup_mae_cp(backbone, embed_dim, optim_config, **kwargs):
     patch_size = image_size // int(num_tokens ** 0.5)
     output_dim = patch_size ** 2 * 3
 
-    # No need for projector since MAEDecoder already include one
-    # decoder = MAEDecoder(embed_dim=decoder_dim, decoder_embed_dim=decoder_dim,
-    #                      output_dim=output_dim, num_patches=num_tokens, depth=decoder_depth)
-    # projector = nn.Linear(embed_dim, decoder_dim)
-    # return spt.Module(backbone=backbone, forward=mae_cp_forward, optim=optim_config,
-    #                   projector=projector, decoder=decoder, mask_ratio=mask_ratio, patch_size=patch_size)
+    masking = PatchMasking(mask_ratio=mask_ratio, block_size=1)  # Random masking
+    encoder = MaskedEncoder(model_or_model_name=backbone, masking=masking)
     
-    decoder = MAEDecoder(embed_dim=embed_dim, decoder_embed_dim=decoder_dim,
-                         output_dim=output_dim, num_patches=num_tokens, depth=decoder_depth)
-    return spt.Module(backbone=backbone, forward=mae_cp_forward, optim=optim_config,
-                      decoder=decoder, mask_ratio=mask_ratio, patch_size=patch_size)
+    decoder = MAEDecoder(
+        embed_dim=embed_dim,
+        decoder_embed_dim=decoder_dim,
+        output_dim=output_dim,
+        num_patches=num_tokens,
+        depth=decoder_depth
+    )
+    
+    return spt.Module(
+        backbone=encoder,
+        forward=mae_cp_forward,
+        optim=optim_config,
+        decoder=decoder,
+        mask_ratio=mask_ratio,
+        patch_size=patch_size
+    )
 
 
 def main():
