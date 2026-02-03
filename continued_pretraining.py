@@ -245,7 +245,7 @@ def load_backbone(args):
     
     if is_timm_model:
         print(f"Loading timm model: {backbone_name}")
-        backbone = from_timm(backbone_name, pretrained=True, num_classes=0)
+        backbone = from_timm(backbone_name, pretrained=True)
     else:
         print(f"Loading HuggingFace model: {backbone_name}")
         backbone = from_huggingface(backbone_name, pretrained=True)

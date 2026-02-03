@@ -76,7 +76,14 @@ def main():
     # Dynamic num_tokens calculation
     with torch.no_grad():
         test_input = torch.zeros(1, 3, image_size, image_size, device=next(backbone.parameters()).device)
-        out = backbone(test_input)
+        
+        # Get token sequence (not pooled features)
+        if hasattr(backbone, 'forward_features'):
+            # timm models: use forward_features to get all tokens
+            out = backbone.forward_features(test_input)
+        else:
+            # HuggingFace models: regular forward
+            out = backbone(test_input)
         
         # Handle different output formats
         if hasattr(out, "last_hidden_state"):
@@ -87,6 +94,13 @@ def main():
             tokens = out
         else:
             raise ValueError(f"Unexpected backbone output type: {type(out)}")
+        
+        # Check token shape is valid
+        if tokens.dim() != 3:
+            raise ValueError(
+                f"Expected 3D token tensor [B, num_tokens, D], got shape {tokens.shape}. "
+                f"Use forward_features() for timm models to get token sequence."
+            )
         
         # Extract number of patch tokens (excluding CLS token)
         num_tokens = tokens.shape[1] - 1
