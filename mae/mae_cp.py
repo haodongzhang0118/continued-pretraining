@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # MAE Continued Pretraining - masked reconstruction (ViT-only)
 import torch
+import torch.nn as nn
 import stable_pretraining as spt
 from lightning.pytorch.loggers import WandbLogger
 from stable_pretraining.backbone.vit import MAEDecoder
@@ -24,12 +25,9 @@ def setup_mae_cp(backbone, embed_dim, optim_config, **kwargs):
 
     decoder = MAEDecoder(embed_dim=decoder_dim, decoder_embed_dim=decoder_dim,
                          output_dim=output_dim, num_patches=num_tokens, depth=decoder_depth)
-    # No need for projector since MAEDecoder already include one
-    # projector = nn.Linear(embed_dim, decoder_dim)
-    # return spt.Module(backbone=backbone, forward=mae_cp_forward, optim=optim_config,
-    #                   projector=projector, decoder=decoder, mask_ratio=mask_ratio, patch_size=patch_size)
+    projector = nn.Linear(embed_dim, decoder_dim)
     return spt.Module(backbone=backbone, forward=mae_cp_forward, optim=optim_config,
-                      decoder=decoder, mask_ratio=mask_ratio, patch_size=patch_size)
+                      projector=projector, decoder=decoder, mask_ratio=mask_ratio, patch_size=patch_size)
 
 
 def main():
