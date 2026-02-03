@@ -43,7 +43,8 @@ def mae_cp_forward(self, batch, stage):
     pred = self.decoder(tokens, mask, output_masked_only=False)  # [B, N_patches, output_dim]
     
     # 3. Store embedding for evaluation callbacks (KNN, linear probe)
-    batch["embedding"] = tokens.mean(dim=1)
+    # Use CLS token (global representation) instead of mean of visible tokens
+    batch["embedding"] = encoder_out.encoded[:, 0]  # CLS token contains global info
     
     # 4. Compute reconstruction loss on masked patches only
     if self.training:
