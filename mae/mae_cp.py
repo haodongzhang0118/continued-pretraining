@@ -33,7 +33,7 @@ def setup_mae_cp(backbone, embed_dim, optim_config, **kwargs):
     
     # Encoder: MaskedEncoder with random masking
     masking = PatchMasking(mask_ratio=mask_ratio, block_size=1)
-    masked_backbone = MaskedEncoder(model_or_model_name=backbone, masking=masking)
+    masked_backbone = MaskedEncoder(model_or_model_name="vit_base_patch16_224", masking=masking)
     
     # Decoder: input is encoder output (embed_dim), internal uses decoder_dim
     decoder = MAEDecoder(
