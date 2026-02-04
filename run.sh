@@ -56,6 +56,7 @@ python -u mae/mae_cp.py \
     --mask-ratio 0.75 \
     --decoder-dim 512 \
     --decoder-depth 4 \
+    --freeze-epochs 0 \
     --num-trained-blocks 2 \
     --warmup-epochs 10 \
     --knn-k 20 \
