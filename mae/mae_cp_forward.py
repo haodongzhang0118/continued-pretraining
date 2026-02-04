@@ -31,7 +31,14 @@ def mae_cp_forward(self, batch, stage):
     4. Compute reconstruction loss only on masked positions
     """
     # 1. Encoder forward (remove CLS token)
-    backbone_out = self.backbone(batch["image"])
+    # For timm models, use forward_features to get token sequence
+    if hasattr(self.backbone, 'forward_features'):
+        # timm models: use forward_features to get all tokens
+        backbone_out = self.backbone.forward_features(batch["image"])
+    else:
+        # HuggingFace models: regular forward
+        backbone_out = self.backbone(batch["image"])
+    
     tokens = (backbone_out.last_hidden_state if hasattr(backbone_out, "last_hidden_state") else backbone_out)[:, 1:]
     B, T, D = tokens.shape
     
