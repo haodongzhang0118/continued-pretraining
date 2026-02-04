@@ -46,7 +46,7 @@ echo "Checkpoint directory: ${CKPT_DIR}"
 echo "Log directory: ${LOG_DIR}"
 echo "=========================================="
 python -u mae/mae_cp.py \
-    --dataset breastmnist \
+    --dataset cifar10 \
     --backbone vit_base_patch16_224 \
     --n-samples 1000 \
     --epochs 100 \
@@ -62,7 +62,7 @@ python -u mae/mae_cp.py \
     --num-workers 8 \
     --checkpoint-dir ${CKPT_DIR} \
     --cache-dir ${DATA_DIR} \
-    --project mae-cp-breastmnist \
+    --project mae-cp-cifar10 \
     --seed 42 2>&1
 EXIT_CODE=$?
 echo "=========================================="
