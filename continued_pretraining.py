@@ -155,41 +155,17 @@ def create_transforms(ds_cfg, n_views=1, strong_aug=False):
 
 
 def create_data_loaders(args, ds_cfg, train_transform, val_transform, data_dir):
-    hf_config = ds_cfg.get("hf_config")
+    from cp_datasets import get_dataset
+    
     # Use splits from dataset config to handle datasets without validation split
     splits = ds_cfg.get("splits", ["train", "validation", "test"])
     train_split, val_split, test_split = splits
     
-    # Handle column name mapping (e.g., CIFAR uses 'img' instead of 'image')
-    rename_columns = ds_cfg.get("rename_columns", None)
-    
-    full_train = spt.data.HFDataset(
-        ds_cfg["hf_name"],
-        name=hf_config,
-        split=train_split,
-        transform=train_transform,
-        trust_remote_code=True,
-        cache_dir=str(data_dir),
-        rename_columns=rename_columns,
-    )
-    val_data = spt.data.HFDataset(
-        ds_cfg["hf_name"],
-        name=hf_config,
-        split=val_split,
-        transform=val_transform,
-        trust_remote_code=True,
-        cache_dir=str(data_dir),
-        rename_columns=rename_columns,
-    )
-    test_data = spt.data.HFDataset(
-        ds_cfg["hf_name"],
-        name=hf_config,
-        split=test_split,
-        transform=val_transform,
-        trust_remote_code=True,
-        cache_dir=str(data_dir),
-        rename_columns=rename_columns,
-    )
+    # Load datasets using the unified get_dataset function
+    # This handles both HuggingFace and custom datasets
+    full_train = get_dataset(args.dataset, train_split, train_transform, data_dir)
+    val_data = get_dataset(args.dataset, val_split, val_transform, data_dir)
+    test_data = get_dataset(args.dataset, test_split, val_transform, data_dir)
 
     torch.manual_seed(args.seed)
     indices = torch.randperm(len(full_train))[: args.n_samples].tolist()
@@ -210,15 +186,7 @@ def create_data_loaders(args, ds_cfg, train_transform, val_transform, data_dir):
     )
     data = spt.data.DataModule(train=train_loader, val=val_loader)
 
-    eval_train = spt.data.HFDataset(
-        ds_cfg["hf_name"],
-        name=hf_config,
-        split=train_split,
-        transform=val_transform,
-        trust_remote_code=True,
-        cache_dir=str(data_dir),
-        rename_columns=rename_columns,
-    )
+    eval_train = get_dataset(args.dataset, train_split, val_transform, data_dir)
     eval_train_loader = torch.utils.data.DataLoader(
         CPSubset(eval_train, indices),
         batch_size=args.batch_size,

@@ -126,7 +126,16 @@ def get_dataset(name, split, transform, cache_dir="/.cache"):
     cache_dir = Path(cache_dir)
 
     if cfg["loader"] == "hf":
-        return load_hf_dataset(cfg["hf_name"], split, transform, cache_dir / "huggingface" / "datasets")
+        hf_config = cfg.get("hf_config")
+        rename_columns = cfg.get("rename_columns", None)
+        return load_hf_dataset(
+            cfg["hf_name"], 
+            split, 
+            transform, 
+            cache_dir / "huggingface" / "datasets",
+            hf_config=hf_config,
+            rename_columns=rename_columns
+        )
     elif cfg["loader"] == "custom":
         return cfg["loader_fn"](split, transform, cache_dir)
     else:
