@@ -40,12 +40,7 @@ def mae_cp_forward(self, batch, stage):
     mask = encoder_out.mask  # [B, N_patches]
     ids_keep = encoder_out.ids_keep  # [B, N_visible] - position indices in SHUFFLED order
     
-    # CRITICAL FIX: Sort visible tokens by position
-    # MaskedEncoder outputs tokens in RANDOM shuffle order (based on ids_keep)
-    # But MAEDecoder expects tokens SORTED by position (for correct position embeddings)
-    # Without this sort, position embeddings will be completely wrong!
-    B, N_vis, D = tokens.shape
-    N_patches = mask.shape[1]
+    _, _, D = tokens.shape
     
     # Sort ids_keep to get the permutation
     ids_sorted_idx = torch.argsort(ids_keep, dim=1)  # [B, N_vis]
@@ -54,7 +49,7 @@ def mae_cp_forward(self, batch, stage):
         tokens, 
         dim=1, 
         index=ids_sorted_idx.unsqueeze(-1).expand(-1, -1, D)
-    )  # [B, N_visible, D] - now sorted by position!
+    )  # [B, N_visible, D]
     
     # 2. Decoder reconstructs all patches from visible tokens
     pred = self.decoder(tokens_sorted, mask, output_masked_only=False)  # [B, N_patches, output_dim]
