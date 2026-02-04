@@ -53,7 +53,7 @@ class FreezeBackboneCallback(pl.Callback):
             print("Warning: Module has no 'backbone' attribute, skipping freeze")
             return
 
-        pl_module.backbone.eval()
+        # pl_module.backbone.eval()  # TESTING: Commented out to keep backbone in train mode
         for param in pl_module.backbone.parameters():
             param.requires_grad = False
 
