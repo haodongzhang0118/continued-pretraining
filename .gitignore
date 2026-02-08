@@ -151,3 +151,7 @@ datasets/
 *.pth
 *.pt
 *.safetensors
+
+# stable training
+stable_pretraining/
+stable_datasets/
