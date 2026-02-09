@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=mae-cp-cifar10
+#SBATCH --job-name=tent-cp-galaxy10
 #SBATCH --partition=nvidia
 #SBATCH --account=civil
 #SBATCH --nodes=1
@@ -45,8 +45,8 @@ echo "Data directory: ${DATA_DIR}"
 echo "Checkpoint directory: ${CKPT_DIR}"
 echo "Log directory: ${LOG_DIR}"
 echo "=========================================="
-python -u tent_temp/tent_cp.py \
-    --dataset cifar10 \
+python -u tent/tent_cp.py \
+    --dataset galaxy10 \
     --backbone vit_base_patch16_224 \
     --n-samples 1000 \
     --epochs 100 \
@@ -60,7 +60,7 @@ python -u tent_temp/tent_cp.py \
     --num-workers 8 \
     --checkpoint-dir ${CKPT_DIR} \
     --cache-dir ${DATA_DIR} \
-    --project tent-cp-cifar10 \
+    --project tent-cp-galaxy10 \
     --seed 42 2>&1
 EXIT_CODE=$?
 echo "=========================================="

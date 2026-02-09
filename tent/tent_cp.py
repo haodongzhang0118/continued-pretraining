@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 """TENT (Test-Time Entropy Minimization) Continued Pretraining."""
-import torch
 import torch.nn as nn
 import stable_pretraining as spt
 from lightning.pytorch.loggers import WandbLogger
 
 from continued_pretraining import (
-    BACKBONE_DIMS, create_base_parser, setup_paths, get_config, create_transforms,
-    create_data_loaders, load_backbone, create_optim_config, run_baseline, run_training, run_final_eval
+    BACKBONE_DIMS, create_base_parser, setup_paths, get_config,
+    load_backbone, create_optim_config, run_baseline, run_training, run_final_eval
 )
-from tent_temp.tent_cp_forward import tent_cp_forward, configure_model_for_tent, collect_params
+from cp_dataloader import create_transforms, create_data_loaders
+from tent.tent_cp_forward import tent_cp_forward, configure_model_for_tent, collect_params
 
 
 def setup_tent_cp(backbone, embed_dim, optim_config, num_classes, tent_mode='norm_only', num_trained_blocks=-1, **kwargs):

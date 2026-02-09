@@ -5,25 +5,24 @@ from pathlib import Path
 
 import lightning as pl
 import torch
-import torch.nn as nn
 from lightning.pytorch.loggers import WandbLogger
 from lightning.pytorch.callbacks import LearningRateMonitor
 
 import stable_pretraining as spt
-from stable_pretraining.data import transforms
 from stable_pretraining.backbone.utils import from_huggingface, from_timm
-from stable_pretraining.data.transforms import MultiViewTransform
 
 try:
     from callbacks import FreezeBackboneCallback, create_cp_evaluation_callbacks
     from callbacks.lejepa_metrics import LeJEPAMetricsCallback
     from evaluation.zero_shot_eval import zero_shot_eval
     from cp_datasets import DATASETS, get_dataset_config
+    from cp_dataloader import create_data_loaders, create_transforms
 except ImportError:
     from .callbacks import FreezeBackboneCallback, create_cp_evaluation_callbacks
     from .callbacks.lejepa_metrics import LeJEPAMetricsCallback
     from .evaluation.zero_shot_eval import zero_shot_eval
     from .cp_datasets import DATASETS, get_dataset_config
+    from .cp_dataloader import create_data_loaders, create_transforms
 
 BACKBONE_DIMS = {
     # DINOv2 models
@@ -50,20 +49,6 @@ BACKBONE_DIMS = {
     "vit_large_patch16_224.mae": 1024,
     "vit_huge_patch14_224.mae": 1280,
 }
-
-
-class CPSubset(torch.utils.data.Dataset):
-    def __init__(self, dataset, indices):
-        self.dataset, self.indices = dataset, indices
-
-    def __len__(self):
-        return len(self.indices)
-
-    def __getitem__(self, idx):
-        sample = self.dataset[self.indices[idx]]
-        if isinstance(sample, dict):
-            sample["sample_idx"] = idx
-        return sample
 
 
 # Shared functions
@@ -112,121 +97,6 @@ def get_config(args):
     )
     warmup_epochs = args.warmup_epochs or int(args.epochs * 0.1)
     return ds_cfg, embed_dim, freeze_epochs, warmup_epochs
-
-
-def create_transforms(ds_cfg, n_views=1, strong_aug=False):
-    if strong_aug:
-        base_aug = transforms.Compose(
-            transforms.RGB(),
-            transforms.RandomResizedCrop(
-                (ds_cfg["input_size"], ds_cfg["input_size"]), scale=(0.2, 1.0)
-            ),
-            transforms.RandomHorizontalFlip(p=0.5),
-            transforms.ColorJitter(
-                brightness=0.8, contrast=0.8, saturation=0.8, hue=0.2, p=0.8
-            ),
-            transforms.RandomGrayscale(p=0.2),
-            transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0), p=0.5),
-            transforms.ToImage(**ds_cfg["normalization"]),
-        )
-    else:
-        base_aug = transforms.Compose(
-            transforms.RGB(),
-            transforms.RandomResizedCrop((ds_cfg["input_size"], ds_cfg["input_size"])),
-            transforms.RandomHorizontalFlip(p=0.5),
-            transforms.ColorJitter(
-                brightness=0.4, contrast=0.4, saturation=0.4, hue=0.2, p=0.3
-            ),
-            transforms.RandomGrayscale(p=0.2),
-            transforms.GaussianBlur(kernel_size=3, sigma=(1.0, 2.0), p=0.2),
-            transforms.ToImage(**ds_cfg["normalization"]),
-        )
-    val_transform = transforms.Compose(
-        transforms.RGB(),
-        transforms.Resize((ds_cfg["input_size"], ds_cfg["input_size"])),
-        transforms.ToImage(**ds_cfg["normalization"]),
-    )
-    train_transform = (
-        MultiViewTransform({f"view_{i}": base_aug for i in range(n_views)})
-        if n_views > 1
-        else base_aug
-    )
-    return train_transform, val_transform
-
-
-def create_data_loaders(args, ds_cfg, train_transform, val_transform, data_dir):
-    hf_config = ds_cfg.get("hf_config")
-    # Use splits from dataset config to handle datasets without validation split
-    splits = ds_cfg.get("splits", ["train", "validation", "test"])
-    train_split, val_split, test_split = splits
-    
-    # Handle column name mapping (e.g., CIFAR uses 'img' instead of 'image')
-    rename_columns = ds_cfg.get("rename_columns", None)
-    
-    full_train = spt.data.HFDataset(
-        ds_cfg["hf_name"],
-        name=hf_config,
-        split=train_split,
-        transform=train_transform,
-        trust_remote_code=True,
-        cache_dir=str(data_dir),
-        rename_columns=rename_columns,
-    )
-    val_data = spt.data.HFDataset(
-        ds_cfg["hf_name"],
-        name=hf_config,
-        split=val_split,
-        transform=val_transform,
-        trust_remote_code=True,
-        cache_dir=str(data_dir),
-        rename_columns=rename_columns,
-    )
-    test_data = spt.data.HFDataset(
-        ds_cfg["hf_name"],
-        name=hf_config,
-        split=test_split,
-        transform=val_transform,
-        trust_remote_code=True,
-        cache_dir=str(data_dir),
-        rename_columns=rename_columns,
-    )
-
-    torch.manual_seed(args.seed)
-    indices = torch.randperm(len(full_train))[: args.n_samples].tolist()
-    train_subset = CPSubset(full_train, indices)
-
-    train_loader = torch.utils.data.DataLoader(
-        train_subset,
-        batch_size=args.batch_size,
-        num_workers=args.num_workers,
-        drop_last=True,
-        shuffle=True,
-    )
-    val_loader = torch.utils.data.DataLoader(
-        val_data, batch_size=args.batch_size, num_workers=args.num_workers
-    )
-    test_loader = torch.utils.data.DataLoader(
-        test_data, batch_size=args.batch_size, num_workers=args.num_workers
-    )
-    data = spt.data.DataModule(train=train_loader, val=val_loader)
-
-    eval_train = spt.data.HFDataset(
-        ds_cfg["hf_name"],
-        name=hf_config,
-        split=train_split,
-        transform=val_transform,
-        trust_remote_code=True,
-        cache_dir=str(data_dir),
-        rename_columns=rename_columns,
-    )
-    eval_train_loader = torch.utils.data.DataLoader(
-        CPSubset(eval_train, indices),
-        batch_size=args.batch_size,
-        num_workers=args.num_workers,
-    )
-
-    print(f"Data: train={len(train_subset)} val={len(val_data)} test={len(test_data)}")
-    return data, test_loader, eval_train_loader, indices
 
 
 def load_backbone(args):
