@@ -45,7 +45,7 @@ DATASETS = {
         "num_classes": 10,
         "input_size": 224,
         "normalization": "galaxy10",
-        "splits": ["train", "val", "test"],
+        "splits": ["train", "validation", "test"],
         "manual_split": True,  # Force manual splitting from full dataset (avoid data leakage)
     },
     # MedMNIST datasets
@@ -55,7 +55,7 @@ DATASETS = {
         "num_classes": 8,
         "input_size": 224,
         "normalization": "bloodmnist",
-        "splits": ["train", "val", "test"],
+        "splits": ["train", "validation", "test"],
     },
     "tissuemnist": {
         "dataset_class": stable_ds.MedMNIST,
@@ -63,7 +63,7 @@ DATASETS = {
         "num_classes": 8,
         "input_size": 224,
         "normalization": "tissuemnist",
-        "splits": ["train", "val", "test"],
+        "splits": ["train", "validation", "test"],
     },
     "pathmnist": {
         "dataset_class": stable_ds.MedMNIST,
@@ -71,7 +71,7 @@ DATASETS = {
         "num_classes": 9,
         "input_size": 224,
         "normalization": "pathmnist",
-        "splits": ["train", "val", "test"],
+        "splits": ["train", "validation", "test"],
     },
     "chestmnist": {
         "dataset_class": stable_ds.MedMNIST,
@@ -79,7 +79,7 @@ DATASETS = {
         "num_classes": 14,
         "input_size": 224,
         "normalization": "chestmnist",
-        "splits": ["train", "val", "test"],
+        "splits": ["train", "validation", "test"],
     },
     "dermamnist": {
         "dataset_class": stable_ds.MedMNIST,
@@ -87,7 +87,7 @@ DATASETS = {
         "num_classes": 7,
         "input_size": 224,
         "normalization": "dermamnist",
-        "splits": ["train", "val", "test"],
+        "splits": ["train", "validation", "test"],
     },
     "octmnist": {
         "dataset_class": stable_ds.MedMNIST,
@@ -95,7 +95,7 @@ DATASETS = {
         "num_classes": 4,
         "input_size": 224,
         "normalization": "octmnist",
-        "splits": ["train", "val", "test"],
+        "splits": ["train", "validation", "test"],
     },
     "pneumoniamnist": {
         "dataset_class": stable_ds.MedMNIST,
@@ -103,7 +103,7 @@ DATASETS = {
         "num_classes": 2,
         "input_size": 224,
         "normalization": "pneumoniamnist",
-        "splits": ["train", "val", "test"],
+        "splits": ["train", "validation", "test"],
     },
     "retinamnist": {
         "dataset_class": stable_ds.MedMNIST,
@@ -111,7 +111,7 @@ DATASETS = {
         "num_classes": 5,
         "input_size": 224,
         "normalization": "retinamnist",
-        "splits": ["train", "val", "test"],
+        "splits": ["train", "validation", "test"],
     },
     "breastmnist": {
         "dataset_class": stable_ds.MedMNIST,
@@ -119,7 +119,7 @@ DATASETS = {
         "num_classes": 2,
         "input_size": 224,
         "normalization": "breastmnist",
-        "splits": ["train", "val", "test"],
+        "splits": ["train", "validation", "test"],
     },
     "organamnist": {
         "dataset_class": stable_ds.MedMNIST,
@@ -127,7 +127,7 @@ DATASETS = {
         "num_classes": 11,
         "input_size": 224,
         "normalization": "organamnist",
-        "splits": ["train", "val", "test"],
+        "splits": ["train", "validation", "test"],
     },
     "organcmnist": {
         "dataset_class": stable_ds.MedMNIST,
@@ -135,7 +135,7 @@ DATASETS = {
         "num_classes": 11,
         "input_size": 224,
         "normalization": "organcmnist",
-        "splits": ["train", "val", "test"],
+        "splits": ["train", "validation", "test"],
     },
     "organsmnist": {
         "dataset_class": stable_ds.MedMNIST,
@@ -143,7 +143,7 @@ DATASETS = {
         "num_classes": 11,
         "input_size": 224,
         "normalization": "organsmnist",
-        "splits": ["train", "val", "test"],
+        "splits": ["train", "validation", "test"],
     },
 }
 

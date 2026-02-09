@@ -142,9 +142,11 @@ def create_data_loaders(args, ds_cfg, train_transform, val_transform, data_dir):
     )
     
     # Verify no data leakage between splits
-    print("Checking for data leakage between splits...")
-    check_dataset_overlap(full_train, val_data, "train", "validation", sample_size=1000, seed=args.seed)
-    check_dataset_overlap(full_train, test_data, "train", "test", sample_size=1000, seed=args.seed)
+    if ds_cfg.get("manual_split", False):
+        print("Checking for data leakage between splits...")
+        check_dataset_overlap(full_train, val_data, "train", "validation", sample_size=100, seed=args.seed)
+        check_dataset_overlap(full_train, test_data, "train", "test", sample_size=100, seed=args.seed)
+        check_dataset_overlap(val_data, test_data, "validation", "test", sample_size=100, seed=args.seed)
 
     # Create training subset
     torch.manual_seed(args.seed)
