@@ -73,14 +73,6 @@ DATASETS = {
         "normalization": "pathmnist",
         "splits": ["train", "validation", "test"],
     },
-    "chestmnist": {
-        "dataset_class": stable_ds.MedMNIST,
-        "config_name": "chestmnist",
-        "num_classes": 14,
-        "input_size": 224,
-        "normalization": "chestmnist",
-        "splits": ["train", "validation", "test"],
-    },
     "dermamnist": {
         "dataset_class": stable_ds.MedMNIST,
         "config_name": "dermamnist",

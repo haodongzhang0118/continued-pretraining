@@ -6,9 +6,10 @@ from lightning.pytorch.loggers import WandbLogger
 from stable_pretraining.backbone.vit import MAEDecoder
 
 from continued_pretraining import (
-    BACKBONE_DIMS, create_base_parser, setup_paths, get_config, create_transforms,
-    create_data_loaders, load_backbone, create_optim_config, run_baseline, run_training, run_final_eval
+    BACKBONE_DIMS, create_base_parser, setup_paths, get_config,
+    load_backbone, create_optim_config, run_baseline, run_training, run_final_eval
 )
+from cp_dataloader import create_transforms, create_data_loaders
 from mae.mae_cp_forward import mae_cp_forward
 
 
