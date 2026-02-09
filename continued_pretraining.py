@@ -302,11 +302,15 @@ def run_baseline(backbone, eval_train_loader, test_loader, device, args, logger)
 
 
 def run_training(
-    module, data, args, ds_cfg, embed_dim, freeze_epochs, logger, ckpt_path, method=None
+    module, data, args, ds_cfg, embed_dim, freeze_epochs, logger, ckpt_path, method=None, num_trained_blocks=None
 ):
+    # Use provided num_trained_blocks or fall back to args
+    if num_trained_blocks is None:
+        num_trained_blocks = args.num_trained_blocks
+    
     callbacks = [
         FreezeBackboneCallback(
-            freeze_epochs=freeze_epochs, num_trained_blocks=args.num_trained_blocks
+            freeze_epochs=freeze_epochs, num_trained_blocks=num_trained_blocks
         ),
         *create_cp_evaluation_callbacks(
             module,

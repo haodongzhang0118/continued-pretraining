@@ -45,7 +45,7 @@ echo "Data directory: ${DATA_DIR}"
 echo "Checkpoint directory: ${CKPT_DIR}"
 echo "Log directory: ${LOG_DIR}"
 echo "=========================================="
-python -u mae/mae_cp.py \
+python -u tent_temp/tent_cp.py \
     --dataset cifar10 \
     --backbone vit_base_patch16_224 \
     --n-samples 1000 \
@@ -53,16 +53,14 @@ python -u mae/mae_cp.py \
     --batch-size 64 \
     --lr 1e-4 \
     --weight-decay 0.05 \
-    --mask-ratio 0.75 \
-    --decoder-dim 512 \
-    --decoder-depth 4 \
+    --tent-mode norm_only \
     --num-trained-blocks 2 \
     --warmup-epochs 10 \
     --knn-k 20 \
     --num-workers 8 \
     --checkpoint-dir ${CKPT_DIR} \
     --cache-dir ${DATA_DIR} \
-    --project mae-cp-cifar10 \
+    --project tent-cp-cifar10 \
     --seed 42 2>&1
 EXIT_CODE=$?
 echo "=========================================="
